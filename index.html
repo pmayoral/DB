@@ -138,8 +138,9 @@
         }
 
         .videos-list.open {
-            max-height: 3000px;
+            max-height: 10000px;
             padding-top: 10px;
+            overflow-y: auto;
         }
 
         .video-item {
@@ -568,24 +569,16 @@
                     throw new Error('No se encontraron archivos en la carpeta');
                 }
 
-                console.log(`Total de archivos en Drive: ${allFiles.length}`);
-
                 DRIVE_FILES = allFiles
                     .filter(file => {
                         const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
-                        const isVideo = VIDEO_EXTENSIONS.includes(ext);
-                        if (!isVideo) {
-                            console.log(`Archivo ignorado (no es video): ${file.name}`);
-                        }
-                        return isVideo;
+                        return VIDEO_EXTENSIONS.includes(ext);
                     })
                     .map(file => ({
                         id: file.id,
                         name: file.name,
                         duration: file.videoMediaMetadata?.durationMillis ? parseInt(file.videoMediaMetadata.durationMillis) / 1000 : 0
                     }));
-
-                console.log(`Videos filtrados: ${DRIVE_FILES.length}`);
 
                 updateStatus(`${DRIVE_FILES.length} episodios`);
 
@@ -595,7 +588,6 @@
             } catch (error) {
                 updateStatus('Error de conexión');
                 showEmptyState('⚠️', 'Error al cargar archivos', error.message);
-                console.error('Error detallado:', error);
             }
         }
 
@@ -702,19 +694,10 @@
 
         function organizeBySeasons(files) {
             const seasons = {};
-            let parsedCount = 0;
-            let unparsedCount = 0;
 
             files.forEach(file => {
                 const parsed = parseFileName(file.name);
-                if (!parsed) {
-                    unparsedCount++;
-                    console.log(`❌ No se pudo parsear: ${file.name}`);
-                    return;
-                }
-
-                parsedCount++;
-                console.log(`✓ Parseado: ${file.name} -> Temporada ${parsed.season}, Episodio ${parsed.episode}`);
+                if (!parsed) return;
 
                 const seasonNum = parsed.season;
 
@@ -734,14 +717,6 @@
                     url: `https://drive.google.com/file/d/${file.id}/preview?quality=high`,
                     videoDuration: file.duration || 0
                 });
-            });
-
-            console.log(`\n📊 Resumen de parseo:`);
-            console.log(`   Archivos parseados: ${parsedCount}`);
-            console.log(`   Archivos NO parseados: ${unparsedCount}`);
-            
-            Object.keys(seasons).forEach(seasonNum => {
-                console.log(`   Temporada ${seasonNum}: ${seasons[seasonNum].videos.length} episodios`);
             });
 
             Object.values(seasons).forEach(season => {
@@ -1120,4 +1095,3 @@
     </script>
 </body>
 </html>
-
