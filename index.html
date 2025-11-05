@@ -689,17 +689,45 @@
                 };
             }
             
-            return null;
+            // Intentar extraer cualquier número del nombre (como episodio genérico)
+            match = fileName.match(/(\d+)/);
+            if (match) {
+                const episodeNum = parseInt(match[1]);
+                const season = Math.ceil(episodeNum / 50);
+                const episodeInSeason = ((episodeNum - 1) % 50) + 1;
+                
+                return {
+                    season: season,
+                    episode: episodeInSeason,
+                    originalName: fileName,
+                    globalEpisode: episodeNum
+                };
+            }
+            
+            // Si no hay números, ponerlo en "Temporada 1" con número de episodio basado en orden alfabético
+            return {
+                season: 1,
+                episode: 9999, // Número alto para que se ordene al final
+                originalName: fileName,
+                noPattern: true
+            };
         }
 
         function organizeBySeasons(files) {
             const seasons = {};
+            let noPatternCounter = 1;
 
-            files.forEach(file => {
+            files.forEach((file, index) => {
                 const parsed = parseFileName(file.name);
                 if (!parsed) return;
 
                 const seasonNum = parsed.season;
+                let episodeNum = parsed.episode;
+
+                // Si el archivo no tiene patrón, asignar número consecutivo
+                if (parsed.noPattern) {
+                    episodeNum = noPatternCounter++;
+                }
 
                 if (!seasons[seasonNum]) {
                     seasons[seasonNum] = {
@@ -709,10 +737,10 @@
                 }
 
                 seasons[seasonNum].videos.push({
-                    id: `s${parsed.season}e${parsed.episode}`,
+                    id: `s${seasonNum}e${episodeNum}_${file.id.substring(0, 8)}`,
                     title: parsed.originalName.replace(/\.[^/.]+$/, ''),
                     fullName: parsed.originalName,
-                    episode: parsed.episode,
+                    episode: episodeNum,
                     fileId: file.id,
                     url: `https://drive.google.com/file/d/${file.id}/preview?quality=high`,
                     videoDuration: file.duration || 0
